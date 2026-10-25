@@ -9,6 +9,7 @@ const MAX_TAG_POLLS = 30;
 const state = { events: [], range: 'week', query: '', tags: new Set() };
 let tagPolls = 0;
 let tagPollTimer = null;
+let picksRequest = 0;
 
 const $ = (id) => document.getElementById(id);
 
@@ -182,34 +183,61 @@ async function getPicks(interests) {
   }
   try { localStorage.setItem('interests', interests); } catch { /* storage unavailable */ }
 
+  const request = ++picksRequest;
+  const current = () => request === picksRequest; // a newer search replaces this one
+  const byId = new Map(state.events.map((e) => [e.id, e]));
   button.disabled = true;
-  status.textContent = 'Gemma is reading this week’s events… (this can take a minute or two)';
+  status.textContent = 'Finding possible matches…';
+  list.classList.remove('possible');
   list.replaceChildren();
 
   try {
-    const res = await fetch('/api/picks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ interests }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+    // Step 1 (instant): code-picked "Possible matches", or cached Gemma picks.
+    const first = await postJson('/api/candidates', { interests });
+    if (!current()) return;
+    let picks = first.picks;
+    if (!picks) {
+      const possible = first.candidates.filter((c) => byId.has(c.id));
+      status.textContent = possible.length
+        ? 'Possible matches. Gemma is reading this week’s events…'
+        : 'Gemma is reading this week’s events…';
+      list.classList.add('possible');
+      list.replaceChildren(...possible.map((c) => pickItem(byId.get(c.id))));
 
-    const byId = new Map(state.events.map((e) => [e.id, e]));
-    const picks = data.picks.filter((p) => byId.has(p.id));
+      // Step 2 (slow): Gemma chooses and explains.
+      picks = (await postJson('/api/picks', { interests })).picks;
+      if (!current()) return;
+    }
+
+    picks = picks.filter((p) => byId.has(p.id));
     status.textContent = picks.length ? '' : 'Nothing this week looks like a strong match. Try describing other interests.';
-    list.replaceChildren(...picks.map((p) => {
-      const e = byId.get(p.id);
-      return el('li', {},
-        el('div', { class: 'pick-title' }, e.title),
-        el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
-        el('p', { class: 'pick-reason' }, p.reason));
-    }));
+    list.classList.remove('possible');
+    list.replaceChildren(...picks.map((p) => pickItem(byId.get(p.id), p.reason)));
   } catch (err) {
-    status.textContent = err.message;
+    // Keep any possible matches on screen; just say Gemma's picks didn't come.
+    if (current()) status.textContent = list.children.length ? `Possible matches. ${err.message}` : err.message;
   } finally {
-    button.disabled = false;
+    if (current()) button.disabled = false;
   }
+}
+
+function pickItem(e, reason) {
+  return el('li', {},
+    el('div', { class: 'pick-title' }, e.title),
+    el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
+    reason ? el('p', { class: 'pick-reason' }, reason)
+      : el('div', { class: 'event-meta' }, ...(e.tags ?? []).map((t) => el('span', { class: 'tag' }, t))));
+}
+
+async function postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  return data;
 }
 
 // ---------------------------------------------------------------------------

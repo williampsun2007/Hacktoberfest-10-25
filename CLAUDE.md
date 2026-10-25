@@ -22,5 +22,10 @@ Gemma on the Gemini API:
 So keep calls few:
 - Tagging batches 110 titles per call (214 titles = 2 calls) and caches results per title in
   `data/tags.json`. Commit that file so tags work with no key or network.
-- Picks is exactly one call over the next 7 days of events (`PICKS_WINDOW_DAYS` in
-  `server.js`), with "Gemma is reading this week's events…" shown while it runs.
+- Picks is exactly one call. `lib/match.js` first pre-filters the next 7 days of events in code
+  (title words + tags, round-robin per interest word) down to 20 (`PICK_CANDIDATES` in
+  `server.js`); Gemma only chooses and explains from those. Cold calls measured 70-136s.
+- The page calls `/api/candidates` first (instant) to show "Possible matches", then
+  `/api/picks` for Gemma's answer. Picks are cached per `date|normalized interests` in memory
+  and `data/picks-cache.json` (gitignored: it holds what students type).
+- The feed has no event descriptions, so matching can only use titles and tags.

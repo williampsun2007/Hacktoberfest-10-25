@@ -3,3 +3,4 @@ node_modules/
 .claude/
 Hacktoberfest-10-25/
 .venv/
+data/picks-cache.json
