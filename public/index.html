@@ -4,12 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UMD Events</title>
+  <script>
+    // Apply a saved theme before the stylesheet loads (no flash of the wrong theme).
+    try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="masthead">
     <div class="wrap">
-      <h1>UMD Events <span class="turtle" aria-hidden="true">🐢</span></h1>
+      <div class="title-row">
+        <h1>UMD Events <span class="turtle" aria-hidden="true">🐢</span></h1>
+        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Switch theme">🌙</button>
+      </div>
       <p class="tagline">Never miss a Terp event</p>
       <div class="feed-row">
         <p id="feed-status" class="feed-status"></p>

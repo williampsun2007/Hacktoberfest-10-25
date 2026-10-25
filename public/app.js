@@ -79,6 +79,7 @@ async function updateEvents() {
 
 function wireControls() {
   $('refresh').addEventListener('click', updateEvents);
+  wireThemeToggle();
 
   // "+ Add to calendar" opens Google Calendar in a new tab; confirm the click
   // briefly on the link itself.
@@ -134,6 +135,28 @@ function wireControls() {
   });
 }
 
+// Light/dark toggle. With no saved choice the page follows the system
+// setting; a click saves the choice (the inline script in index.html
+// applies it before first paint).
+function wireThemeToggle() {
+  const button = $('theme-toggle');
+  const root = document.documentElement;
+  const systemDark = matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => (root.dataset.theme ?? (systemDark.matches ? 'dark' : 'light')) === 'dark';
+  const sync = () => {
+    button.textContent = isDark() ? '☀️' : '🌙';
+    button.setAttribute('aria-label', isDark() ? 'Switch to light mode' : 'Switch to dark mode');
+  };
+  button.addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try { localStorage.setItem('theme', next); } catch { /* storage unavailable */ }
+    sync();
+  });
+  systemDark.addEventListener('change', sync);
+  sync();
+}
+
 function renderTagChips(allTags) {
   const used = new Set(state.events.flatMap((e) => e.tags ?? []));
   const box = $('tags');
@@ -185,8 +208,30 @@ function render() {
       el('ul', { class: 'event-list' }, ...events.map(eventItem)))));
 }
 
+// Category tile: emoji + tint from the event's first tag (decorative; the
+// tags themselves are shown as text).
+const TAG_TILES = {
+  'Academic & Lectures': ['🎓', 'academic'],
+  'Arts & Performances': ['🎭', 'arts'],
+  'Exhibitions': ['🖼️', 'exhibitions'],
+  'Sports & Recreation': ['🏀', 'sports'],
+  'Career & Professional': ['💼', 'career'],
+  'Health & Wellness': ['🧘', 'health'],
+  'Social & Community': ['🤝', 'social'],
+  'Workshops & Training': ['🛠️', 'workshops'],
+  'Science & Research': ['🔬', 'science'],
+  'Culture & Identity': ['🌍', 'culture'],
+  'Deadlines & Admin': ['📋', 'admin'],
+};
+
+function tile(e) {
+  const [emoji, key] = TAG_TILES[e.tags?.[0]] ?? ['📅', 'none'];
+  return el('span', { class: `tile tile-${key}`, 'aria-hidden': 'true' }, emoji);
+}
+
 function eventItem(e) {
   return el('li', { class: 'event' },
+    tile(e),
     el('div', { class: 'event-time' }, whenLabel(e)),
     el('div', {},
       el('p', { class: 'event-title' }, e.title),
@@ -322,14 +367,16 @@ function possibleItem(e) {
 // `index` staggers the fade-in (CSS reads --i).
 function pickCard(e, reason, index = 0) {
   return el('li', { class: 'pick-card', style: `--i: ${index}` },
-    el('span', { class: 'pick-badge' }, 'AI pick'),
-    el('div', { class: 'pick-title' }, e.title),
-    el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
-    el('p', { class: 'pick-reason' }, el('span', { class: 'pick-why' }, 'Why:'), ` ${reason}`),
-    el('div', { class: 'event-meta' },
-      ...pickTags(e),
-      el('a', { class: 'add-cal', href: googleCalendarUrl(e), target: '_blank', rel: 'noopener' }, '+ Add to calendar'),
-      el('button', { type: 'button', class: 'pick-not', 'data-title': e.title, 'aria-label': `Not for me: ${e.title}` }, 'Not for me')));
+    tile(e),
+    el('div', { class: 'pick-body' },
+      el('span', { class: 'pick-badge' }, 'AI pick'),
+      el('div', { class: 'pick-title' }, e.title),
+      el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
+      el('p', { class: 'pick-reason' }, el('span', { class: 'pick-why' }, 'Why:'), ` ${reason}`),
+      el('div', { class: 'event-meta' },
+        ...pickTags(e),
+        el('a', { class: 'add-cal', href: googleCalendarUrl(e), target: '_blank', rel: 'noopener' }, '+ Add to calendar'),
+        el('button', { type: 'button', class: 'pick-not', 'data-title': e.title, 'aria-label': `Not for me: ${e.title}` }, 'Not for me'))));
 }
 
 async function postJson(url, body) {

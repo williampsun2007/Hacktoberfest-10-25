@@ -1,6 +1,7 @@
 :root {
   --red: #e21833;
   --red-dark: #b5122a;
+  --red-text: #c8102e; /* red for small text: >= 4.5:1 on --bg and --surface */
   --gold: #ffd200;
   --bg: #f6f5f3;
   --surface: #ffffff;
@@ -16,8 +17,25 @@
   color-scheme: light dark;
 }
 
+/* Dark theme: an explicit choice (data-theme="dark", set by the header
+   toggle), or the system setting when no choice is saved. Same values in both. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161514;
+  --surface: #211f1e;
+  --text: #f1efec;
+  --muted: #a39e98;
+  --border: #3a3735;
+  --chip: #211f1e;
+  --chip-on: #f1efec;
+  --chip-on-text: #161514;
+  --ok: #4ac26b;
+  --red-text: #ff5a6e;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #161514;
     --surface: #211f1e;
     --text: #f1efec;
@@ -27,6 +45,7 @@
     --chip-on: #f1efec;
     --chip-on-text: #161514;
     --ok: #4ac26b;
+    --red-text: #ff5a6e;
   }
 }
 
@@ -144,6 +163,10 @@ input[type="text"], input[type="search"] {
 .picks-elapsed { margin-left: 6px; font-variant-numeric: tabular-nums; }
 .picks-list .pick-card,
 .picks-list .pick-card:first-child {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  align-items: start;
+  column-gap: 12px;
   margin-top: 8px;
   padding: 12px 14px;
   background: var(--bg);
@@ -161,7 +184,7 @@ input[type="text"], input[type="search"] {
   font-weight: 700;
 }
 .pick-card .pick-reason { margin-top: 6px; }
-.pick-why { color: var(--red); font-weight: 700; }
+.pick-why { color: var(--red-text); font-weight: 700; }
 .pick-not {
   padding: 2px 6px;
   border: 0;
@@ -171,7 +194,7 @@ input[type="text"], input[type="search"] {
   font-size: 0.8rem;
   cursor: pointer;
 }
-.pick-not:hover:not(:disabled) { color: var(--red); }
+.pick-not:hover:not(:disabled) { color: var(--red-text); }
 .pick-not:disabled { opacity: 0.5; cursor: progress; }
 .pick-card { animation: pick-in 0.35s ease both; animation-delay: calc(var(--i, 0) * 90ms); }
 @keyframes pick-in { from { opacity: 0; transform: translateY(6px); } }
@@ -227,12 +250,13 @@ input[type="text"], input[type="search"] {
   font-size: 0.95rem;
   z-index: 1;
 }
-.day h3 .rel { color: var(--red); margin-left: 6px; font-weight: 600; }
+.day h3 .rel { color: var(--red-text); margin-left: 6px; font-weight: 600; }
 
 .event-list { list-style: none; margin: 0; padding: 0; }
 .event {
   display: grid;
-  grid-template-columns: 9.5rem 1fr;
+  grid-template-columns: 2.5rem 9.5rem 1fr;
+  align-items: start;
   gap: 12px;
   padding: 12px 14px;
   margin-bottom: 6px;
@@ -251,9 +275,51 @@ input[type="text"], input[type="search"] {
   background: color-mix(in srgb, var(--red) 10%, transparent);
   color: var(--text);
 }
-.add-cal { font-size: 0.8rem; color: var(--red); text-decoration: none; margin-left: auto; border-radius: 4px; }
+.add-cal { font-size: 0.8rem; color: var(--red-text); text-decoration: none; margin-left: auto; border-radius: 4px; }
 .add-cal:hover { text-decoration: underline; }
 .add-cal.added { color: var(--ok); font-weight: 600; text-decoration: none; }
+
+/* --- Category tiles: emoji + soft tint from the event's first tag ------ */
+.tile {
+  --tile: var(--muted);
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tile) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tile) 30%, transparent);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.tile-academic { --tile: #3b6fd8; }
+.tile-arts { --tile: #9b4dca; }
+.tile-exhibitions { --tile: #1f9e9a; }
+.tile-sports { --tile: #e8772e; }
+.tile-career { --tile: #4a5a75; }
+.tile-health { --tile: #2f9e5b; }
+.tile-social { --tile: #d94c8a; }
+.tile-workshops { --tile: #c98a12; }
+.tile-science { --tile: #1b8fd1; }
+.tile-culture { --tile: #b8603a; }
+.tile-admin { --tile: #7a756f; }
+
+/* --- Theme toggle (in the red header) ------------------------------------ */
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.theme-toggle {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.15); }
+.theme-toggle:focus-visible { outline-color: var(--gold); }
 
 @media (max-width: 560px) {
   .masthead { padding: 22px 0 16px; }
@@ -261,7 +327,10 @@ input[type="text"], input[type="search"] {
   .picks { padding: 14px; }
   .picks-form { flex-direction: column; }
   .picks-form button { justify-content: center; }
-  .event { grid-template-columns: 1fr; gap: 2px; }
+  .event { grid-template-columns: 2.25rem 1fr; gap: 2px 12px; }
+  .event .tile { grid-row: span 2; }
+  .tile { width: 2.25rem; height: 2.25rem; font-size: 1.1rem; }
+  .picks-list .pick-card, .picks-list .pick-card:first-child { grid-template-columns: 2.25rem 1fr; }
   .add-cal { margin-left: 0; padding: 4px 0; } /* bigger tap target */
   .pick-not { padding: 6px 8px; }
 }
