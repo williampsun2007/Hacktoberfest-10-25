@@ -35,11 +35,11 @@ async function load() {
   renderTagChips(data.tags);
   render();
 
-  // On a first run Gemini tags titles in the background; check back until done.
+  // If the AI plug-in tags titles in the background, check back until it is done.
   const untagged = state.events.filter((e) => !e.tags).length;
   const { running, failed } = data.tagging;
   $('tag-status').textContent =
-    running && untagged ? `Gemini is tagging events… (${untagged} to go)`
+    running && untagged ? `Tagging events… (${untagged} to go)`
     : failed ? 'Auto-tagging hit an error (see the server log). It retries on the next feed refresh.'
     : '';
   clearTimeout(tagPollTimer);

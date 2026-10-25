@@ -1,17 +1,15 @@
 # UMD Events
 
 Pulls the University of Maryland campus calendar and shows it as a searchable,
-filterable list, with Gemini-powered category tags and personal picks.
+filterable list. AI category tags and personal picks plug in through one file,
+`lib/ai.js` (see below).
 
 ## Run it
 
 ```bash
 npm install
-cp .env.example .env   # then paste your Gemini key into .env (optional)
 npm start              # http://localhost:3000
 ```
-
-Without `GEMINI_API_KEY` the app still works; tags and the "For you" panel are just hidden.
 
 ## How it works
 
@@ -19,13 +17,27 @@ Without `GEMINI_API_KEY` the app still works; tags and the "For you" panel are j
   on the site. It only has titles and times (no locations, descriptions, or links).
   `lib/ics.js` parses it and handles the feed's quirks (duplicate entries, repeat rules
   on events that are already listed one by one, campus-local times).
-- **Caching:** `lib/feed.js` refetches hourly. If calendar.umd.edu is unreachable it
-  serves `data/snapshot.ics`. Run `npm run snapshot` before a demo to refresh it.
-- **Auto-tagging:** `lib/ai.js` sends new event titles to Gemini in batches and caches
-  the results in `data/tags.json`, so each title is tagged once. Commit that file and
-  tags work on demo day even without a key or network.
-- **Picks:** `POST /api/picks` sends the student's interests plus the next two weeks
-  of events to Gemini, which returns up to 6 events with a one-line reason for each.
+- **Caching:** `lib/feed.js` refetches hourly, and the page's "Update events" button
+  refetches on demand. If calendar.umd.edu is unreachable it serves `data/snapshot.ics`.
+  Run `npm run snapshot` before a demo to refresh it.
+
+## Adding AI
+
+Everything AI-related goes in `lib/ai.js`. The server and page already call it, so
+nothing else needs to change.
+
+- **Tags** (category filter buttons): write `data/tags.json`, keyed by exact event title.
+  Any language works, e.g. a Python script:
+  ```json
+  { "Maryland Volleyball vs Michigan State": ["Sports & Recreation"] }
+  ```
+  The server notices changes within a couple of seconds; reload the page to see them.
+  Tags listed in `TAGS` in `lib/ai.js` get filter buttons. To tag from JavaScript
+  instead, do it in `onEventsImported(events)`, which runs every time events are imported.
+- **Picks** (the "For you" panel): implement `pickEvents(events, interests)` to return
+  up to 6 `{ id, reason }` objects, then set `aiEnabled = true`.
+- **API keys:** put them in a `.env` file (`npm start` loads it; git ignores it) and
+  read them with `process.env.YOUR_KEY_NAME`.
 
 ## API
 
@@ -34,3 +46,4 @@ Without `GEMINI_API_KEY` the app still works; tags and the "For you" panel are j
   button) and returns `{ ok, error?, added, total, source, fetchedAt }`. Calls within 30 seconds
   of the last fetch reuse it.
 - `POST /api/picks` with `{ "interests": "..." }` returns `{ picks: [{ id, reason }] }`
+  (503 until picks are set up)
