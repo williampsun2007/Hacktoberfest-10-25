@@ -270,8 +270,8 @@ async function getPicks(interests) {
     if (!picks) {
       const possible = first.candidates.filter((c) => byId.has(c.id));
       status.textContent = possible.length
-        ? 'Possible matches. AI is reading this week’s events…'
-        : 'AI is reading this week’s events…';
+        ? 'Possible matches. AI is reading the next two weeks’ events…'
+        : 'AI is reading the next two weeks’ events…';
       list.classList.add('possible');
       list.replaceChildren(...possible.map((c) => possibleItem(byId.get(c.id))));
 
@@ -283,7 +283,7 @@ async function getPicks(interests) {
     }
 
     picks = picks.filter((p) => byId.has(p.id));
-    status.textContent = picks.length ? '' : 'Nothing this week looks like a strong match. Try describing other interests.';
+    status.textContent = picks.length ? '' : 'Nothing in the next two weeks looks like a strong match. Try describing other interests.';
     list.classList.remove('possible');
     list.replaceChildren(...picks.map((p, i) => pickCard(byId.get(p.id), p.reason, i)));
   } catch (err) {
@@ -316,7 +316,7 @@ async function rejectPick(card, title) {
     const { picks } = await postJson('/api/picks', { interests: picksState.interests, rejected: picksState.rejected });
     if (!current()) return;
     const shown = picks.filter((p) => byId.has(p.id));
-    status.textContent = shown.length ? '' : 'Nothing else this week looks like a match.';
+    status.textContent = shown.length ? '' : 'Nothing else in the next two weeks looks like a match.';
     list.replaceChildren(...shown.map((p, i) => pickCard(byId.get(p.id), p.reason, i)));
   } catch (err) {
     if (current()) status.textContent = err.message; // keep the remaining cards

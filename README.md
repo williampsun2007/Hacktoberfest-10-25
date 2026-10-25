@@ -30,8 +30,8 @@ Without either key the app still works; tags and the "For you" panel are just hi
 - **Auto-tagging:** `lib/ai.js` sends new event titles to the AI model in batches of 110 and caches
   the results in `data/tags.json`, so each title is tagged once. Commit that file and
   tags work on demo day even without a key or network.
-- **Picks:** `lib/match.js` scores the next 7 days of events against the student's interests
-  (title words and tags) and keeps the top 12. The model gets those in one call and returns up to
+- **Picks:** `lib/match.js` scores the next 14 days of events against the student's interests
+  (title words and tags) and keeps the top 30. The model gets those in one call and returns up to
   4 events with a one-line reason for each. Answers are cached per day and normalized query
   in `data/picks-cache.json`, so repeat searches are instant.
 

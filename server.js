@@ -6,8 +6,8 @@ import {
 import { normalizeInterests, rankCandidates } from './lib/match.js';
 
 const PORT = process.env.PORT || 3000;
-const PICKS_WINDOW_DAYS = 7;
-const PICK_CANDIDATES = 12; // sent to the model; fewer = faster
+const PICKS_WINDOW_DAYS = 14;
+const PICK_CANDIDATES = 30; // sent to the model; fewer = faster
 const POSSIBLE_SHOWN = 6; // pre-filter results shown while the model works
 
 const app = express();
@@ -116,20 +116,32 @@ async function topCandidates(interests, rejected = []) {
   return rankCandidates(events, interests, tagsFor, PICK_CANDIDATES).map((c) => c.event);
 }
 
-// Events in the next 7 days, one entry per title (earliest upcoming
-// occurrence), so a series doesn't take up 10 slots.
+// Events in the next 14 days, one entry per title (earliest upcoming
+// occurrence), so a series doesn't take up 10 slots. Timed events that
+// already ended today are dropped (same rule as the page's event list);
+// all-day and multi-day events stay while their last day hasn't passed.
 async function weekCandidates() {
   const { events } = await getEvents();
   const today = campusToday();
+  const now = campusNow();
   const until = addDays(today, PICKS_WINDOW_DAYS);
   const seen = new Set();
   return events
-    .filter((e) => e.endDate >= today && e.startDate <= until)
+    .filter((e) => (e.allDay ? e.endDate >= today : e.end >= now) && e.startDate <= until)
     .filter((e) => !seen.has(e.title) && seen.add(e.title));
 }
 
 function campusToday() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+}
+
+// Campus wall-clock time as "YYYY-MM-DDTHH:mm", comparable with event.end.
+function campusNow(date = new Date()) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(date).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
 
 function addDays(dateStr, days) {

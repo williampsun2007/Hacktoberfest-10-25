@@ -31,8 +31,8 @@ Gemma on the Gemini API:
 So keep calls few:
 - Tagging batches 110 titles per call (214 titles = 2 calls) and caches results per title in
   `data/tags.json`. Commit that file so tags work with no key or network.
-- Picks is exactly one call. `lib/match.js` first pre-filters the next 7 days of events in code
-  (title words + tags, round-robin per interest word) down to 12 (`PICK_CANDIDATES` in
+- Picks is exactly one call. `lib/match.js` first pre-filters the next 14 days of events in code
+  (title words + tags, round-robin per interest word) down to 30 (`PICK_CANDIDATES` in
   `server.js`); the model only chooses and explains from those. Cold calls: ~14-17s on Llama/DO, 75-124s on Gemma.
 - The page calls `/api/candidates` first (instant) to show "Possible matches", then
   `/api/picks` for the model's answer. Picks are cached per `date|normalized interests` in memory
