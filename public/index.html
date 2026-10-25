@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UMD Events</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <h1>UMD Events</h1>
+      <p class="tagline">Everything happening on campus, in one place.</p>
+      <div class="feed-row">
+        <p id="feed-status" class="feed-status"></p>
+        <button id="refresh" type="button" class="refresh-btn">Update events</button>
+      </div>
+      <p id="refresh-status" class="feed-status" aria-live="polite"></p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="picks" class="picks" hidden>
+      <h2>For you</h2>
+      <form id="picks-form" class="picks-form">
+        <label for="interests" class="visually-hidden">Your interests</label>
+        <input id="interests" type="text" maxlength="500" autocomplete="off"
+               placeholder="What are you into? e.g. CS major, jazz, pickup soccer, free food">
+        <button type="submit">Find my picks</button>
+      </form>
+      <p id="picks-status" class="muted" aria-live="polite"></p>
+      <ol id="picks-list" class="picks-list"></ol>
+    </section>
+
+    <section class="controls" aria-label="Filters">
+      <input id="search" type="search" placeholder="Search events" aria-label="Search events">
+      <div id="ranges" class="chips" role="group" aria-label="Date range">
+        <button type="button" data-range="today">Today</button>
+        <button type="button" data-range="week" aria-pressed="true">This week</button>
+        <button type="button" data-range="month">Next 30 days</button>
+        <button type="button" data-range="all">All upcoming</button>
+      </div>
+      <div id="tags" class="chips tags" role="group" aria-label="Categories"></div>
+      <p id="tag-status" class="muted"></p>
+    </section>
+
+    <details id="ongoing" class="ongoing" hidden>
+      <summary></summary>
+      <ul id="ongoing-list" class="event-list"></ul>
+    </details>
+
+    <p id="count" class="muted"></p>
+    <div id="days"></div>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
