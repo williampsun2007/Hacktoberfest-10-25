@@ -36,11 +36,11 @@ async function load() {
   renderTagChips(data.tags);
   render();
 
-  // On a first run Gemma tags titles in the background; check back until done.
+  // On a first run the AI model tags titles in the background; check back until done.
   const untagged = state.events.filter((e) => !e.tags).length;
   const { running, failed } = data.tagging;
   $('tag-status').textContent =
-    running && untagged ? `Gemma is tagging events… (${untagged} to go)`
+    running && untagged ? `AI is tagging events… (${untagged} to go)`
     : failed ? 'Auto-tagging hit an error (see the server log). It retries on the next feed refresh.'
     : '';
   clearTimeout(tagPollTimer);
@@ -197,19 +197,19 @@ async function getPicks(interests) {
   list.replaceChildren();
 
   try {
-    // Step 1 (instant): code-picked "Possible matches", or cached Gemma picks.
+    // Step 1 (instant): code-picked "Possible matches", or cached AI picks.
     const first = await postJson('/api/candidates', { interests });
     if (!current()) return;
     let picks = first.picks;
     if (!picks) {
       const possible = first.candidates.filter((c) => byId.has(c.id));
       status.textContent = possible.length
-        ? 'Possible matches. Gemma is reading this week’s events…'
-        : 'Gemma is reading this week’s events…';
+        ? 'Possible matches. AI is reading this week’s events…'
+        : 'AI is reading this week’s events…';
       list.classList.add('possible');
       list.replaceChildren(...possible.map((c) => possibleItem(byId.get(c.id))));
 
-      // Step 2 (slow): Gemma chooses and explains. Count the seconds so a
+      // Step 2 (slow): the AI model chooses and explains. Count the seconds so a
       // ~1-2 minute wait doesn't look frozen.
       startElapsed();
       picks = (await postJson('/api/picks', { interests })).picks;
@@ -221,7 +221,7 @@ async function getPicks(interests) {
     list.classList.remove('possible');
     list.replaceChildren(...picks.map((p) => pickCard(byId.get(p.id), p.reason)));
   } catch (err) {
-    // Keep any possible matches on screen; just say Gemma's picks didn't come.
+    // Keep any possible matches on screen; just say the AI picks didn't come.
     if (current()) status.textContent = list.children.length ? `Possible matches. ${err.message}` : err.message;
   } finally {
     if (current()) {
@@ -255,7 +255,7 @@ function pickTags(e) {
   return (e.tags ?? []).map((t) => el('span', { class: 'tag' }, t));
 }
 
-// Code-picked candidate shown (faded) while Gemma works.
+// Code-picked candidate shown (faded) while the AI model works.
 function possibleItem(e) {
   return el('li', {},
     el('div', { class: 'pick-title' }, e.title),
@@ -263,10 +263,10 @@ function possibleItem(e) {
     el('div', { class: 'event-meta' }, ...pickTags(e)));
 }
 
-// Gemma's final pick.
+// The AI model's final pick.
 function pickCard(e, reason) {
   return el('li', { class: 'pick-card' },
-    el('span', { class: 'pick-badge' }, 'Gemma’s pick'),
+    el('span', { class: 'pick-badge' }, 'AI pick'),
     el('div', { class: 'pick-title' }, e.title),
     el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
     el('p', { class: 'pick-reason' }, el('span', { class: 'pick-why' }, 'Why:'), ` ${reason}`),

@@ -1,21 +1,23 @@
 # UMD Events
 
 Pulls the University of Maryland campus calendar and shows it as a searchable,
-filterable list, with Gemma-powered category tags and personal picks.
+filterable list, with AI-powered category tags and personal picks.
 
-**AI: 100% Gemma (open-weight).** Every AI feature in this app (event tagging and "For you"
-picks) runs on Google's open-weight Gemma model, `gemma-4-26b-a4b-it`, through the Gemini API.
-No proprietary Gemini models are used.
+**AI: open-weight models only.** "For you" picks run on **Llama 4 Maverick** (`llama-4-maverick`),
+Meta's open-weight model, hosted on DigitalOcean Serverless Inference (OpenAI-compatible API,
+key in `.env` as `DO_INFERENCE_KEY`). If that key isn't set, the app falls back to Google's
+open-weight **Gemma** (`gemma-4-26b-a4b-it`) via `GEMINI_API_KEY`. The committed event tags in
+`data/tags.json` were produced by Gemma. No proprietary models are used.
 
 ## Run it
 
 ```bash
 npm install
-cp .env.example .env   # then paste your Google AI Studio key into .env (optional)
+cp .env.example .env   # then add DO_INFERENCE_KEY (or GEMINI_API_KEY) to .env (optional)
 npm start              # http://localhost:3000
 ```
 
-Without `GEMINI_API_KEY` the app still works; tags and the "For you" panel are just hidden.
+Without either key the app still works; tags and the "For you" panel are just hidden.
 
 ## How it works
 
@@ -25,11 +27,11 @@ Without `GEMINI_API_KEY` the app still works; tags and the "For you" panel are j
   on events that are already listed one by one, campus-local times).
 - **Caching:** `lib/feed.js` refetches hourly. If calendar.umd.edu is unreachable it
   serves `data/snapshot.ics`. Run `npm run snapshot` before a demo to refresh it.
-- **Auto-tagging:** `lib/ai.js` sends new event titles to Gemma (`gemma-4-26b-a4b-it`) in batches of 110 and caches
+- **Auto-tagging:** `lib/ai.js` sends new event titles to the AI model in batches of 110 and caches
   the results in `data/tags.json`, so each title is tagged once. Commit that file and
   tags work on demo day even without a key or network.
 - **Picks:** `lib/match.js` scores the next 7 days of events against the student's interests
-  (title words and tags) and keeps the top 12. Gemma gets those in one call and returns up to
+  (title words and tags) and keeps the top 12. The model gets those in one call and returns up to
   4 events with a one-line reason for each. Answers are cached per day and normalized query
   in `data/picks-cache.json`, so repeat searches are instant.
 

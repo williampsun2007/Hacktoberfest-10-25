@@ -1,14 +1,14 @@
 import express from 'express';
 import { getEvents, onEventsLoaded, refreshNow } from './lib/feed.js';
 import {
-  TAGS, aiEnabled, cachePicks, cachedPicks, describeError, pickEvents, tagNewTitles, taggingStatus, tagsFor,
+  TAGS, aiEnabled, aiModel, cachePicks, cachedPicks, describeError, pickEvents, tagNewTitles, taggingStatus, tagsFor,
 } from './lib/ai.js';
 import { normalizeInterests, rankCandidates } from './lib/match.js';
 
 const PORT = process.env.PORT || 3000;
 const PICKS_WINDOW_DAYS = 7;
-const PICK_CANDIDATES = 12; // sent to Gemma; fewer = faster
-const POSSIBLE_SHOWN = 6; // pre-filter results shown while Gemma works
+const PICK_CANDIDATES = 12; // sent to the model; fewer = faster
+const POSSIBLE_SHOWN = 6; // pre-filter results shown while the model works
 
 const app = express();
 app.use(express.json({ limit: '10kb' }));
@@ -37,7 +37,7 @@ app.post('/api/refresh', async (req, res) => {
 
 // Picks come in two steps so the page can show something right away:
 // /api/candidates is instant (code-only pre-filter, plus any cached picks),
-// then /api/picks has Gemma choose and explain from those same candidates.
+// then /api/picks has the model choose and explain from those same candidates.
 app.post('/api/candidates', async (req, res) => {
   const interests = readInterests(req, res);
   if (!interests) return;
@@ -48,7 +48,7 @@ app.post('/api/candidates', async (req, res) => {
   });
 });
 
-const picksInFlight = new Map(); // same query at the same time -> one Gemma call
+const picksInFlight = new Map(); // same query at the same time -> one model call
 
 app.post('/api/picks', async (req, res) => {
   const interests = readInterests(req, res);
@@ -76,7 +76,7 @@ app.post('/api/picks', async (req, res) => {
 function readInterests(req, res) {
   const interests = String(req.body?.interests ?? '').trim().slice(0, 500);
   if (!interests) res.status(400).json({ error: 'Tell us a bit about your interests first.' });
-  else if (!aiEnabled) res.status(503).json({ error: 'Picks need a GEMINI_API_KEY on the server.' });
+  else if (!aiEnabled) res.status(503).json({ error: 'Picks need DO_INFERENCE_KEY or GEMINI_API_KEY on the server.' });
   else return interests;
   return null;
 }
@@ -112,6 +112,6 @@ function addDays(dateStr, days) {
 
 app.listen(PORT, () => {
   console.log(`UMD Events running at http://localhost:${PORT}`);
-  console.log(aiEnabled ? '[ai] Gemma features on (gemma-4-26b-a4b-it)' : '[ai] GEMINI_API_KEY not set: tags and picks are off');
+  console.log(aiEnabled ? `[ai] AI features on (${aiModel})` : '[ai] no AI key set: tags and picks are off');
   getEvents(); // warm the cache (and kick off tagging) before the first visitor
 });
