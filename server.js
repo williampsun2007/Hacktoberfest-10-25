@@ -3,7 +3,7 @@ import { getEvents, onEventsLoaded, refreshNow } from './lib/feed.js';
 import { TAGS, aiEnabled, describeError, pickEvents, tagNewTitles, taggingStatus, tagsFor } from './lib/ai.js';
 
 const PORT = process.env.PORT || 3000;
-const PICKS_WINDOW_DAYS = 14;
+const PICKS_WINDOW_DAYS = 7;
 const MAX_PICK_CANDIDATES = 250;
 
 const app = express();
@@ -34,10 +34,10 @@ app.post('/api/refresh', async (req, res) => {
 app.post('/api/picks', async (req, res) => {
   const interests = String(req.body?.interests ?? '').trim().slice(0, 500);
   if (!interests) return res.status(400).json({ error: 'Tell us a bit about your interests first.' });
-  if (!aiEnabled) return res.status(503).json({ error: 'Picks need a Gemini API key on the server.' });
+  if (!aiEnabled) return res.status(503).json({ error: 'Picks need a GEMINI_API_KEY on the server.' });
 
-  // Candidates: events in the next two weeks, one entry per title (earliest
-  // upcoming occurrence), so Gemini isn't shown the same series 10 times.
+  // Candidates: events in the next 7 days, one entry per title (earliest
+  // upcoming occurrence), so Gemma isn't shown the same series 10 times.
   const { events } = await getEvents();
   const today = campusToday();
   const until = addDays(today, PICKS_WINDOW_DAYS);
@@ -66,6 +66,6 @@ function addDays(dateStr, days) {
 
 app.listen(PORT, () => {
   console.log(`UMD Events running at http://localhost:${PORT}`);
-  console.log(aiEnabled ? '[ai] Gemini features on' : '[ai] GEMINI_API_KEY not set: tags and picks are off');
+  console.log(aiEnabled ? '[ai] Gemma features on (gemma-4-26b-a4b-it)' : '[ai] GEMINI_API_KEY not set: tags and picks are off');
   getEvents(); // warm the cache (and kick off tagging) before the first visitor
 });

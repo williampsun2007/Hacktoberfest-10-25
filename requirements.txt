@@ -1,0 +1,4 @@
+# Python dependencies for terplink_events.py
+# Install with: pip install -r requirements.txt
+requests>=2.31
+pandas>=2.0

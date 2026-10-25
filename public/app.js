@@ -35,11 +35,11 @@ async function load() {
   renderTagChips(data.tags);
   render();
 
-  // On a first run Gemini tags titles in the background; check back until done.
+  // On a first run Gemma tags titles in the background; check back until done.
   const untagged = state.events.filter((e) => !e.tags).length;
   const { running, failed } = data.tagging;
   $('tag-status').textContent =
-    running && untagged ? `Gemini is tagging events… (${untagged} to go)`
+    running && untagged ? `Gemma is tagging events… (${untagged} to go)`
     : failed ? 'Auto-tagging hit an error (see the server log). It retries on the next feed refresh.'
     : '';
   clearTimeout(tagPollTimer);
@@ -183,7 +183,7 @@ async function getPicks(interests) {
   try { localStorage.setItem('interests', interests); } catch { /* storage unavailable */ }
 
   button.disabled = true;
-  status.textContent = 'Finding your picks from the next two weeks…';
+  status.textContent = 'Gemma is reading this week’s events… (this can take a minute or two)';
   list.replaceChildren();
 
   try {
@@ -197,7 +197,7 @@ async function getPicks(interests) {
 
     const byId = new Map(state.events.map((e) => [e.id, e]));
     const picks = data.picks.filter((p) => byId.has(p.id));
-    status.textContent = picks.length ? '' : 'Nothing in the next two weeks looks like a strong match. Try describing other interests.';
+    status.textContent = picks.length ? '' : 'Nothing this week looks like a strong match. Try describing other interests.';
     list.replaceChildren(...picks.map((p) => {
       const e = byId.get(p.id);
       return el('li', {},
