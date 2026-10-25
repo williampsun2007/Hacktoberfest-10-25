@@ -22,13 +22,20 @@
   <main class="wrap">
     <section id="picks" class="picks" hidden>
       <h2>For you</h2>
+      <p class="muted">Powered by Gemma, Google's open-weight model</p>
       <form id="picks-form" class="picks-form">
         <label for="interests" class="visually-hidden">Your interests</label>
         <input id="interests" type="text" maxlength="500" autocomplete="off"
                placeholder="What are you into? e.g. CS major, jazz, pickup soccer, free food">
         <button type="submit">Find my picks</button>
       </form>
-      <p id="picks-status" class="muted" aria-live="polite"></p>
+      <div id="picks-examples" class="chips picks-examples" role="group" aria-label="Example interests">
+        <span class="examples-label">Try:</span>
+        <button type="button">free food</button>
+        <button type="button">CS &amp; hackathons</button>
+        <button type="button">music &amp; dancing</button>
+      </div>
+      <p class="muted picks-status-row"><span id="picks-status" aria-live="polite"></span><span id="picks-elapsed" class="picks-elapsed" aria-hidden="true"></span></p>
       <ol id="picks-list" class="picks-list"></ol>
     </section>
 

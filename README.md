@@ -3,6 +3,10 @@
 Pulls the University of Maryland campus calendar and shows it as a searchable,
 filterable list, with Gemma-powered category tags and personal picks.
 
+**AI: 100% Gemma (open-weight).** Every AI feature in this app (event tagging and "For you"
+picks) runs on Google's open-weight Gemma model, `gemma-4-26b-a4b-it`, through the Gemini API.
+No proprietary Gemini models are used.
+
 ## Run it
 
 ```bash
@@ -25,8 +29,8 @@ Without `GEMINI_API_KEY` the app still works; tags and the "For you" panel are j
   the results in `data/tags.json`, so each title is tagged once. Commit that file and
   tags work on demo day even without a key or network.
 - **Picks:** `lib/match.js` scores the next 7 days of events against the student's interests
-  (title words and tags) and keeps the top 20. Gemma gets those in one call and returns up to
-  6 events with a one-line reason for each. Answers are cached per day and normalized query
+  (title words and tags) and keeps the top 12. Gemma gets those in one call and returns up to
+  4 events with a one-line reason for each. Answers are cached per day and normalized query
   in `data/picks-cache.json`, so repeat searches are instant.
 
 ## API

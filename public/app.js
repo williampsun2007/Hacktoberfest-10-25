@@ -107,6 +107,12 @@ function wireControls() {
     e.preventDefault();
     getPicks(interests.value.trim());
   });
+  $('picks-examples').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    interests.value = btn.textContent;
+    getPicks(btn.textContent);
+  });
 }
 
 function renderTagChips(allTags) {
@@ -176,7 +182,6 @@ function eventItem(e) {
 async function getPicks(interests) {
   const status = $('picks-status');
   const list = $('picks-list');
-  const button = $('picks-form').querySelector('button');
   if (!interests) {
     status.textContent = 'Tell us a bit about what you like first.';
     return;
@@ -186,7 +191,7 @@ async function getPicks(interests) {
   const request = ++picksRequest;
   const current = () => request === picksRequest; // a newer search replaces this one
   const byId = new Map(state.events.map((e) => [e.id, e]));
-  button.disabled = true;
+  setPicksBusy(true);
   status.textContent = 'Finding possible matches…';
   list.classList.remove('possible');
   list.replaceChildren();
@@ -202,9 +207,11 @@ async function getPicks(interests) {
         ? 'Possible matches. Gemma is reading this week’s events…'
         : 'Gemma is reading this week’s events…';
       list.classList.add('possible');
-      list.replaceChildren(...possible.map((c) => pickItem(byId.get(c.id))));
+      list.replaceChildren(...possible.map((c) => possibleItem(byId.get(c.id))));
 
-      // Step 2 (slow): Gemma chooses and explains.
+      // Step 2 (slow): Gemma chooses and explains. Count the seconds so a
+      // ~1-2 minute wait doesn't look frozen.
+      startElapsed();
       picks = (await postJson('/api/picks', { interests })).picks;
       if (!current()) return;
     }
@@ -212,21 +219,60 @@ async function getPicks(interests) {
     picks = picks.filter((p) => byId.has(p.id));
     status.textContent = picks.length ? '' : 'Nothing this week looks like a strong match. Try describing other interests.';
     list.classList.remove('possible');
-    list.replaceChildren(...picks.map((p) => pickItem(byId.get(p.id), p.reason)));
+    list.replaceChildren(...picks.map((p) => pickCard(byId.get(p.id), p.reason)));
   } catch (err) {
     // Keep any possible matches on screen; just say Gemma's picks didn't come.
     if (current()) status.textContent = list.children.length ? `Possible matches. ${err.message}` : err.message;
   } finally {
-    if (current()) button.disabled = false;
+    if (current()) {
+      stopElapsed();
+      setPicksBusy(false);
+    }
   }
 }
 
-function pickItem(e, reason) {
+function setPicksBusy(busy) {
+  for (const b of document.querySelectorAll('#picks-form button, #picks-examples button')) b.disabled = busy;
+}
+
+let elapsedTimer = null;
+
+function startElapsed() {
+  const started = Date.now();
+  const show = () => { $('picks-elapsed').textContent = `${Math.floor((Date.now() - started) / 1000)}s`; };
+  stopElapsed();
+  show();
+  elapsedTimer = setInterval(show, 1000);
+}
+
+function stopElapsed() {
+  clearInterval(elapsedTimer);
+  elapsedTimer = null;
+  $('picks-elapsed').textContent = '';
+}
+
+function pickTags(e) {
+  return (e.tags ?? []).map((t) => el('span', { class: 'tag' }, t));
+}
+
+// Code-picked candidate shown (faded) while Gemma works.
+function possibleItem(e) {
   return el('li', {},
     el('div', { class: 'pick-title' }, e.title),
     el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
-    reason ? el('p', { class: 'pick-reason' }, reason)
-      : el('div', { class: 'event-meta' }, ...(e.tags ?? []).map((t) => el('span', { class: 'tag' }, t))));
+    el('div', { class: 'event-meta' }, ...pickTags(e)));
+}
+
+// Gemma's final pick.
+function pickCard(e, reason) {
+  return el('li', { class: 'pick-card' },
+    el('span', { class: 'pick-badge' }, 'Gemma’s pick'),
+    el('div', { class: 'pick-title' }, e.title),
+    el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
+    el('p', { class: 'pick-reason' }, el('span', { class: 'pick-why' }, 'Why:'), ` ${reason}`),
+    el('div', { class: 'event-meta' },
+      ...pickTags(e),
+      el('a', { class: 'add-cal', href: googleCalendarUrl(e), target: '_blank', rel: 'noopener' }, '+ Add to calendar')));
 }
 
 async function postJson(url, body) {

@@ -7,7 +7,7 @@ import { normalizeInterests, rankCandidates } from './lib/match.js';
 
 const PORT = process.env.PORT || 3000;
 const PICKS_WINDOW_DAYS = 7;
-const PICK_CANDIDATES = 20; // sent to Gemma; fewer = faster
+const PICK_CANDIDATES = 12; // sent to Gemma; fewer = faster
 const POSSIBLE_SHOWN = 6; // pre-filter results shown while Gemma works
 
 const app = express();

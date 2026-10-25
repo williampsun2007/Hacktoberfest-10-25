@@ -112,6 +112,31 @@ input[type="text"], input[type="search"] {
 .pick-title { font-weight: 600; }
 .pick-when { color: var(--muted); font-size: 0.85rem; }
 .pick-reason { margin: 2px 0 0; font-size: 0.95rem; }
+.picks-examples { align-items: center; margin-top: 10px; }
+.examples-label { color: var(--muted); font-size: 0.85rem; }
+.picks-examples button:disabled { opacity: 0.6; cursor: progress; }
+.picks-status-row:not(:has(span:not(:empty))) { display: none; }
+.picks-elapsed { margin-left: 6px; font-variant-numeric: tabular-nums; }
+.picks-list .pick-card,
+.picks-list .pick-card:first-child {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.pick-badge {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1c1b1a;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.pick-card .pick-reason { margin-top: 6px; }
+.pick-why { color: var(--red); font-weight: 700; }
 
 /* --- Filters ---------------------------------------------------------- */
 .controls { margin: 20px 0 8px; display: grid; gap: 10px; }
