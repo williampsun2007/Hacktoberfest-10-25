@@ -162,6 +162,17 @@ input[type="text"], input[type="search"] {
 }
 .pick-card .pick-reason { margin-top: 6px; }
 .pick-why { color: var(--red); font-weight: 700; }
+.pick-not {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.pick-not:hover:not(:disabled) { color: var(--red); }
+.pick-not:disabled { opacity: 0.5; cursor: progress; }
 .pick-card { animation: pick-in 0.35s ease both; animation-delay: calc(var(--i, 0) * 90ms); }
 @keyframes pick-in { from { opacity: 0; transform: translateY(6px); } }
 
@@ -252,6 +263,7 @@ input[type="text"], input[type="search"] {
   .picks-form button { justify-content: center; }
   .event { grid-template-columns: 1fr; gap: 2px; }
   .add-cal { margin-left: 0; padding: 4px 0; } /* bigger tap target */
+  .pick-not { padding: 6px 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

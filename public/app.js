@@ -10,6 +10,7 @@ const state = { events: [], range: 'week', query: '', tags: new Set() };
 let tagPolls = 0;
 let tagPollTimer = null;
 let picksRequest = 0;
+const picksState = { interests: '', rejected: [] }; // current search, for "Not for me"
 
 const $ = (id) => document.getElementById(id);
 
@@ -121,6 +122,10 @@ function wireControls() {
     e.preventDefault();
     getPicks(interests.value.trim());
   });
+  $('picks-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('.pick-not');
+    if (btn && !btn.disabled) rejectPick(btn.closest('li'), btn.dataset.title);
+  });
   $('picks-examples').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
@@ -202,6 +207,8 @@ async function getPicks(interests) {
   }
   try { localStorage.setItem('interests', interests); } catch { /* storage unavailable */ }
 
+  picksState.interests = interests;
+  picksState.rejected = [];
   const request = ++picksRequest;
   const current = () => request === picksRequest; // a newer search replaces this one
   const byId = new Map(state.events.map((e) => [e.id, e]));
@@ -245,8 +252,39 @@ async function getPicks(interests) {
   }
 }
 
+// "Not for me": drop the card, then ask for new picks for the same interests,
+// telling the model which titles were rejected (the server won't cache these).
+async function rejectPick(card, title) {
+  const status = $('picks-status');
+  const list = $('picks-list');
+  picksState.rejected.push(title);
+  card.remove();
+
+  const request = ++picksRequest;
+  const current = () => request === picksRequest;
+  const byId = new Map(state.events.map((e) => [e.id, e]));
+  setPicksBusy(true);
+  status.textContent = 'Finding new picks…';
+  startElapsed();
+
+  try {
+    const { picks } = await postJson('/api/picks', { interests: picksState.interests, rejected: picksState.rejected });
+    if (!current()) return;
+    const shown = picks.filter((p) => byId.has(p.id));
+    status.textContent = shown.length ? '' : 'Nothing else this week looks like a match.';
+    list.replaceChildren(...shown.map((p, i) => pickCard(byId.get(p.id), p.reason, i)));
+  } catch (err) {
+    if (current()) status.textContent = err.message; // keep the remaining cards
+  } finally {
+    if (current()) {
+      stopElapsed();
+      setPicksBusy(false);
+    }
+  }
+}
+
 function setPicksBusy(busy) {
-  for (const b of document.querySelectorAll('#picks-form button, #picks-examples button')) b.disabled = busy;
+  for (const b of document.querySelectorAll('#picks-form button, #picks-examples button, .pick-not')) b.disabled = busy;
   const submit = $('picks-form').querySelector('button');
   submit.classList.toggle('is-loading', busy);
   submit.textContent = busy ? 'Finding…' : 'Find my picks';
@@ -290,7 +328,8 @@ function pickCard(e, reason, index = 0) {
     el('p', { class: 'pick-reason' }, el('span', { class: 'pick-why' }, 'Why:'), ` ${reason}`),
     el('div', { class: 'event-meta' },
       ...pickTags(e),
-      el('a', { class: 'add-cal', href: googleCalendarUrl(e), target: '_blank', rel: 'noopener' }, '+ Add to calendar')));
+      el('a', { class: 'add-cal', href: googleCalendarUrl(e), target: '_blank', rel: 'noopener' }, '+ Add to calendar'),
+      el('button', { type: 'button', class: 'pick-not', 'data-title': e.title, 'aria-label': `Not for me: ${e.title}` }, 'Not for me')));
 }
 
 async function postJson(url, body) {

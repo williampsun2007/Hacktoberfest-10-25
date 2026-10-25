@@ -53,6 +53,18 @@ const picksInFlight = new Map(); // same query at the same time -> one model cal
 app.post('/api/picks', async (req, res) => {
   const interests = readInterests(req, res);
   if (!interests) return;
+
+  // "Not for me": titles the student rejected. These results are never cached.
+  const rejected = readRejected(req);
+  if (rejected.length) {
+    try {
+      return res.json({ picks: await pickEvents(await topCandidates(interests, rejected), interests, rejected) });
+    } catch (err) {
+      console.warn(`[ai] picks failed: ${describeError(err)}`);
+      return res.status(502).json({ error: 'Could not get picks right now. Try again in a moment.' });
+    }
+  }
+
   const key = picksKey(interests);
   const cached = cachedPicks(key);
   if (cached) return res.json({ picks: cached, cached: true });
@@ -81,12 +93,27 @@ function readInterests(req, res) {
   return null;
 }
 
+// Optional list of rejected event titles; anything malformed counts as none.
+function readRejected(req) {
+  const list = req.body?.rejected;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((t) => typeof t === 'string')
+    .map((t) => t.trim().slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 20);
+}
+
 function picksKey(interests) {
   return `${campusToday()}|${normalizeInterests(interests)}`;
 }
 
-async function topCandidates(interests) {
-  return rankCandidates(await weekCandidates(), interests, tagsFor, PICK_CANDIDATES).map((c) => c.event);
+// Rejected titles are dropped before ranking, so they can't come back and
+// their slots go to other events.
+async function topCandidates(interests, rejected = []) {
+  const skip = new Set(rejected);
+  const events = (await weekCandidates()).filter((e) => !skip.has(e.title));
+  return rankCandidates(events, interests, tagsFor, PICK_CANDIDATES).map((c) => c.event);
 }
 
 // Events in the next 7 days, one entry per title (earliest upcoming
