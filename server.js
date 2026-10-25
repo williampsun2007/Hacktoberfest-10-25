@@ -1,6 +1,6 @@
 import express from 'express';
 import { getEvents, onEventsLoaded, refreshNow } from './lib/feed.js';
-import { TAGS, aiEnabled, onEventsImported, pickEvents, taggingStatus, tagsFor } from './lib/ai.js';
+import { TAGS, aiEnabled, describeError, pickEvents, tagNewTitles, taggingStatus, tagsFor } from './lib/ai.js';
 
 const PORT = process.env.PORT || 3000;
 const PICKS_WINDOW_DAYS = 14;
@@ -10,8 +10,8 @@ const app = express();
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public'));
 
-// Let the AI plug-in (lib/ai.js) see every newly imported event list.
-onEventsLoaded((events) => onEventsImported(events));
+// Tag new titles in the background whenever the feed loads.
+onEventsLoaded((events) => tagNewTitles(events));
 
 app.get('/api/events', async (req, res) => {
   const { events, source, fetchedAt } = await getEvents();
@@ -34,10 +34,10 @@ app.post('/api/refresh', async (req, res) => {
 app.post('/api/picks', async (req, res) => {
   const interests = String(req.body?.interests ?? '').trim().slice(0, 500);
   if (!interests) return res.status(400).json({ error: 'Tell us a bit about your interests first.' });
-  if (!aiEnabled) return res.status(503).json({ error: "Picks aren't set up yet." });
+  if (!aiEnabled) return res.status(503).json({ error: 'Picks need a Gemini API key on the server.' });
 
   // Candidates: events in the next two weeks, one entry per title (earliest
-  // upcoming occurrence), so the same series doesn't show up 10 times.
+  // upcoming occurrence), so Gemini isn't shown the same series 10 times.
   const { events } = await getEvents();
   const today = campusToday();
   const until = addDays(today, PICKS_WINDOW_DAYS);
@@ -50,7 +50,7 @@ app.post('/api/picks', async (req, res) => {
   try {
     res.json({ picks: await pickEvents(candidates, interests) });
   } catch (err) {
-    console.warn(`[ai] picks failed: ${err.message}`);
+    console.warn(`[ai] picks failed: ${describeError(err)}`);
     res.status(502).json({ error: 'Could not get picks right now. Try again in a moment.' });
   }
 });
@@ -66,6 +66,6 @@ function addDays(dateStr, days) {
 
 app.listen(PORT, () => {
   console.log(`UMD Events running at http://localhost:${PORT}`);
-  console.log(aiEnabled ? '[ai] picks on' : '[ai] picks off (see lib/ai.js to plug in AI)');
-  getEvents(); // warm the cache before the first visitor
+  console.log(aiEnabled ? '[ai] Gemini features on' : '[ai] GEMINI_API_KEY not set: tags and picks are off');
+  getEvents(); // warm the cache (and kick off tagging) before the first visitor
 });
