@@ -79,6 +79,20 @@ async function updateEvents() {
 function wireControls() {
   $('refresh').addEventListener('click', updateEvents);
 
+  // "+ Add to calendar" opens Google Calendar in a new tab; confirm the click
+  // briefly on the link itself.
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('.add-cal');
+    if (!link || link.classList.contains('added')) return;
+    const label = link.textContent;
+    link.textContent = '✓ Opened in Calendar';
+    link.classList.add('added');
+    setTimeout(() => {
+      link.textContent = label;
+      link.classList.remove('added');
+    }, 2000);
+  });
+
   $('search').addEventListener('input', (e) => {
     state.query = e.target.value.trim().toLowerCase();
     render();
@@ -219,7 +233,7 @@ async function getPicks(interests) {
     picks = picks.filter((p) => byId.has(p.id));
     status.textContent = picks.length ? '' : 'Nothing this week looks like a strong match. Try describing other interests.';
     list.classList.remove('possible');
-    list.replaceChildren(...picks.map((p) => pickCard(byId.get(p.id), p.reason)));
+    list.replaceChildren(...picks.map((p, i) => pickCard(byId.get(p.id), p.reason, i)));
   } catch (err) {
     // Keep any possible matches on screen; just say the AI picks didn't come.
     if (current()) status.textContent = list.children.length ? `Possible matches. ${err.message}` : err.message;
@@ -233,6 +247,9 @@ async function getPicks(interests) {
 
 function setPicksBusy(busy) {
   for (const b of document.querySelectorAll('#picks-form button, #picks-examples button')) b.disabled = busy;
+  const submit = $('picks-form').querySelector('button');
+  submit.classList.toggle('is-loading', busy);
+  submit.textContent = busy ? 'Finding…' : 'Find my picks';
 }
 
 let elapsedTimer = null;
@@ -264,8 +281,9 @@ function possibleItem(e) {
 }
 
 // The AI model's final pick.
-function pickCard(e, reason) {
-  return el('li', { class: 'pick-card' },
+// `index` staggers the fade-in (CSS reads --i).
+function pickCard(e, reason, index = 0) {
+  return el('li', { class: 'pick-card', style: `--i: ${index}` },
     el('span', { class: 'pick-badge' }, 'AI pick'),
     el('div', { class: 'pick-title' }, e.title),
     el('div', { class: 'pick-when' }, `${dayLabel(e.startDate)} · ${whenLabel(e)}`),
